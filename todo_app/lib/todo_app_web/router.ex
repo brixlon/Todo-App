@@ -17,16 +17,14 @@ defmodule TodoAppWeb.Router do
   scope "/", TodoAppWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
-  end
+    # Homepage route -> Tasks LiveView
+    live "/", TaskLive.Index, :index
 
-  scope "/", TodoAppWeb do
-    pipe_through :browser
-
-    get "/tasks", TaskController, :index
-    get "/tasks/new", TaskController, :new
-    post "/tasks/search", TaskController, :search
-    get "/tasks/search", TaskController, :search
+    # LiveView routes for tasks
+    live "/tasks", TaskLive.Index, :index
+    live "/tasks/new", TaskLive.Form, :new
+    live "/tasks/:id/edit", TaskLive.Form, :edit
+    live "/tasks/:id", TaskLive.Show, :show
   end
 
   # Other scopes may use custom stacks.
@@ -36,11 +34,6 @@ defmodule TodoAppWeb.Router do
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:todo_app, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do

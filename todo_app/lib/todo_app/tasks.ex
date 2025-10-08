@@ -49,7 +49,7 @@ defmodule TodoApp.Tasks do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_task(attrs) do
+  def create_task(attrs \\ %{}) do
     %Task{}
     |> Task.changeset(attrs)
     |> Repo.insert()
@@ -100,5 +100,24 @@ defmodule TodoApp.Tasks do
   """
   def change_task(%Task{} = task, attrs \\ %{}) do
     Task.changeset(task, attrs)
+  end
+
+  def search_tasks(query) do
+    pattern = "%#{query}%"
+
+    from(t in Task,
+      where: ilike(t.title, ^pattern) or ilike(t.description, ^pattern)
+    )
+    |> Repo.all()
+  end
+
+  def sort_tasks(sort) do
+    tasks = list_tasks()
+
+    case sort do
+      "asc" -> Enum.sort_by(tasks, & &1.inserted_at, :asc)
+      "desc" -> Enum.sort_by(tasks, & &1.inserted_at, :desc)
+      _ -> tasks
+    end
   end
 end

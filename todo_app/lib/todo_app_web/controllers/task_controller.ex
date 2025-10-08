@@ -15,15 +15,15 @@ defmodule TodoAppWeb.TaskController do
   end
 
   def create(conn, %{"task" => task_params}) do
-  case Tasks.create_task(task_params) do
-    {:ok, _task} ->
-      conn
-      |> put_flash(:info, "Task created successfully.")
-      |> redirect(to: ~p"/tasks")
+    case Tasks.create_task(task_params) do
+      {:ok, _task} ->
+        conn
+        |> put_flash(:info, "Task created successfully.")
+        |> redirect(to: ~p"/tasks")
 
-     {:error, %Ecto.Changeset{} = changeset} ->
-      render(conn, :new, changeset: changeset)
-     end
+      {:error, %Ecto.Changeset{} = changeset} ->
+        render(conn, :new, changeset: changeset)
+    end
   end
 
   def search(conn, %{"q" => query}) do

@@ -52,15 +52,16 @@ defmodule TodoAppWeb.TaskLive.Index do
      |> assign(:page_title, "Listing Tasks")
      |> stream(:tasks, list_tasks())}
   end
-def handle_event("search", %{"query" => query}, socket) do
-  tasks = TodoApp.Tasks.search_tasks(query)
-  {:noreply, assign(socket, :tasks, tasks)}
-end
 
-def handle_event("sort", %{"sort" => sort}, socket) do
-  tasks = TodoApp.Tasks.sort_tasks(sort)
-  {:noreply, assign(socket, :tasks, tasks)}
-end
+  def handle_event("search", %{"query" => query}, socket) do
+    tasks = TodoApp.Tasks.search_tasks(query)
+    {:noreply, assign(socket, :tasks, tasks)}
+  end
+
+  def handle_event("sort", %{"sort" => sort}, socket) do
+    tasks = TodoApp.Tasks.sort_tasks(sort)
+    {:noreply, assign(socket, :tasks, tasks)}
+  end
 
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do

@@ -21,7 +21,13 @@ defmodule TodoApp.TasksTest do
     end
 
     test "create_task/1 with valid data creates a task" do
-      valid_attrs = %{description: "some description", title: "some title", due_date: ~D[2025-10-07], due_time: ~T[14:00:00], repeat: "some repeat"}
+      valid_attrs = %{
+        description: "some description",
+        title: "some title",
+        due_date: ~D[2025-10-07],
+        due_time: ~T[14:00:00],
+        repeat: "some repeat"
+      }
 
       assert {:ok, %Task{} = task} = Tasks.create_task(valid_attrs)
       assert task.description == "some description"
@@ -37,7 +43,14 @@ defmodule TodoApp.TasksTest do
 
     test "update_task/2 with valid data updates the task" do
       task = task_fixture()
-      update_attrs = %{description: "some updated description", title: "some updated title", due_date: ~D[2025-10-08], due_time: ~T[15:01:01], repeat: "some updated repeat"}
+
+      update_attrs = %{
+        description: "some updated description",
+        title: "some updated title",
+        due_date: ~D[2025-10-08],
+        due_time: ~T[15:01:01],
+        repeat: "some updated repeat"
+      }
 
       assert {:ok, %Task{} = task} = Tasks.update_task(task, update_attrs)
       assert task.description == "some updated description"

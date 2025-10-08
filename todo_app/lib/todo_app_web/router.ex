@@ -20,6 +20,15 @@ defmodule TodoAppWeb.Router do
     get "/", PageController, :home
   end
 
+  scope "/", TodoAppWeb do
+    pipe_through :browser
+
+    get "/tasks", TaskController, :index
+    get "/tasks/new", TaskController, :new
+    post "/tasks/search", TaskController, :search
+    get "/tasks/search", TaskController, :search
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", TodoAppWeb do
   #   pipe_through :api

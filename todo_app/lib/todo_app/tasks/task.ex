@@ -18,4 +18,5 @@ defmodule TodoApp.Tasks.Task do
     |> cast(attrs, [:title, :description, :due_date, :due_time, :repeat])
     |> validate_required([:title, :description, :due_date, :due_time, :repeat])
   end
+  
 end

@@ -4,31 +4,38 @@
   <.form for={@changeset} phx-submit="save" class="space-y-4">
     <div>
       <label class="block text-sm font-medium">Title</label>
-      <%= text_input @form, :title, class: "w-full mt-1 p-2 border rounded-md" %>
+      {text_input(@form, :title, class: "w-full mt-1 p-2 border rounded-md")}
     </div>
 
     <div>
       <label class="block text-sm font-medium">Description</label>
-      <%= textarea @form, :description, class: "w-full mt-1 p-2 border rounded-md" %>
+      {textarea(@form, :description, class: "w-full mt-1 p-2 border rounded-md")}
     </div>
 
     <div class="flex space-x-2">
       <div class="flex-1">
         <label class="block text-sm font-medium">Date</label>
-        <%= date_input @form, :due_date, class: "w-full mt-1 p-2 border rounded-md" %>
+        {date_input(@form, :due_date, class: "w-full mt-1 p-2 border rounded-md")}
       </div>
       <div class="flex-1">
         <label class="block text-sm font-medium">Time</label>
-        <%= time_input @form, :due_time, class: "w-full mt-1 p-2 border rounded-md" %>
+        {time_input(@form, :due_time, class: "w-full mt-1 p-2 border rounded-md")}
       </div>
     </div>
-<%= live_redirect "View Tasks", to: Routes.task_index_path(@socket, :index), class: "bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600" %>
+    {live_redirect("View Tasks",
+      to: Routes.task_index_path(@socket, :index),
+      class: "bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+    )}
 
     <div>
       <label class="block text-sm font-medium">Repeat</label>
-      <%= select @form, :repeat, ["None", "Hourly", "Daily", "Monthly"], class: "w-full mt-1 p-2 border rounded-md" %>
+      {select(@form, :repeat, ["None", "Hourly", "Daily", "Monthly"],
+        class: "w-full mt-1 p-2 border rounded-md"
+      )}
     </div>
 
-    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Add Task</button>
+    <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">
+      Add Task
+    </button>
   </.form>
 </div>

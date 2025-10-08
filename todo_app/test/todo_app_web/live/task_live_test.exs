@@ -4,8 +4,20 @@ defmodule TodoAppWeb.TaskLiveTest do
   import Phoenix.LiveViewTest
   import TodoApp.TasksFixtures
 
-  @create_attrs %{description: "some description", title: "some title", due_date: "2025-10-07", due_time: "14:00", repeat: "some repeat"}
-  @update_attrs %{description: "some updated description", title: "some updated title", due_date: "2025-10-08", due_time: "15:01", repeat: "some updated repeat"}
+  @create_attrs %{
+    description: "some description",
+    title: "some title",
+    due_date: "2025-10-07",
+    due_time: "14:00",
+    repeat: "some repeat"
+  }
+  @update_attrs %{
+    description: "some updated description",
+    title: "some updated title",
+    due_date: "2025-10-08",
+    due_time: "15:01",
+    repeat: "some updated repeat"
+  }
   @invalid_attrs %{description: nil, title: nil, due_date: nil, due_time: nil, repeat: nil}
   defp create_task(_) do
     task = task_fixture()

@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :todo_app, TodoApp.Repo,
   username: "postgres",
-  password: "postgres",
+  password: "developer",
   hostname: "localhost",
   database: "todo_app_dev",
   stacktrace: true,

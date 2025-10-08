@@ -3,7 +3,7 @@ import Config
 # Configure your database
 config :todo_app, TodoApp.Repo,
   username: "postgres",
-  password: "developer",
+  password: "postgres",
   hostname: "localhost",
   database: "todo_app_dev",
   stacktrace: true,
@@ -23,7 +23,7 @@ config :todo_app, TodoAppWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "FN/aCzo9EHPlEsGpeu+tKKCmGrgAuIXWYdWXjh+2MaDCnzxz5NcM4Dj84kSUJTIq",
+  secret_key_base: "KJvQ7ogLk95xfJVHPBbcJ/ZMtBwUJfS7Xxqy7CnReRo6Uhv5o4mJe4HY9c2HoXI1",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:todo_app, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:todo_app, ~w(--watch)]}
@@ -86,3 +86,4 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+

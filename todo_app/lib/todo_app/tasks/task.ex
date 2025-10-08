@@ -5,16 +5,17 @@ defmodule TodoApp.Tasks.Task do
   schema "tasks" do
     field :title, :string
     field :description, :string
-    field :date, :date
-    field :time, :time
+    field :due_date, :date
+    field :due_time, :time
     field :repeat, :string
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
+  @doc false
   def changeset(task, attrs) do
     task
-    |> cast(attrs, [:title, :description, :date, :time, :repeat])
-    |> validate_required([:title, :description, :date, :time])
+    |> cast(attrs, [:title, :description, :due_date, :due_time, :repeat])
+    |> validate_required([:title, :description, :due_date, :due_time, :repeat])
   end
 end

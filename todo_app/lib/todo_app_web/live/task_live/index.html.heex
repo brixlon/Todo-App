@@ -1,0 +1,37 @@
+<div class="max-w-3xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-6">My Tasks</h1>
+
+  <!-- Search bar -->
+  <div class="flex items-center mb-4 space-x-2">
+    <input
+      type="text"
+      placeholder="Search tasks..."
+      phx-debounce="300"
+      phx-change="search"
+      name="query"
+      class="flex-1 border p-2 rounded-md"
+    />
+    <select name="sort" phx-change="sort" class="border p-2 rounded-md">
+      <option value="due_soon">Due Soon</option>
+      <option value="date_added">Date Added</option>
+      <option value="due_date">Due Date</option>
+    </select>
+  </div>
+
+  <!-- Task list -->
+  <div class="space-y-3">
+    <%= for task <- @tasks do %>
+      <div class={
+        if task.due_date && Date.compare(task.due_date, Date.utc_today()) == :lt do
+          "border-l-4 border-red-500 bg-red-50 p-4 rounded-md"
+        else
+          "border-l-4 border-green-500 bg-green-50 p-4 rounded-md"
+        end
+      }>
+        <h2 class="font-semibold text-lg"><%= task.title %></h2>
+        <p class="text-sm text-gray-600"><%= task.description %></p>
+        <p class="text-sm mt-1 text-gray-700">Due: <%= task.due_date %> <%= task.due_time %></p>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -7,7 +7,7 @@ defmodule TodoAppWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_todo_app_key",
-    signing_salt: "DIj65F8B",
+    signing_salt: "pplaaYyM",
     same_site: "Lax"
   ]
 

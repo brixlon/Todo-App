@@ -172,4 +172,11 @@ defmodule TodoApp.Tasks do
       end
     end
   end
+
+  def toggle_complete(%Task{} = task) do
+  task
+  |> Task.changeset(%{completed: !task.completed})
+  |> Repo.update()
+end
+
 end

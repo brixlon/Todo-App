@@ -56,7 +56,10 @@ defmodule TodoAppWeb.TaskLive.Index do
         if t.id == task.id, do: %{t | completed: !t.completed}, else: t
       end)
 
-    {:noreply, assign(socket, tasks: updated_tasks)}
+    {:noreply,
+     socket
+     |> put_flash(:info, "Task marked as #{if task.completed, do: "incomplete", else: "complete"}")
+     |> assign(:tasks, updated_tasks)}
   end
 
   # SHOW TASK DETAILS
@@ -124,6 +127,33 @@ defmodule TodoAppWeb.TaskLive.Index do
     end
   end
 
+  # Unified UI helpers for action buttons and badges
+  defp action_btn_classes(:toggle, task) do
+    base =
+      "group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md active:shadow-sm"
+
+    variant =
+      if task.completed do
+        "bg-gradient-to-br from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900 text-white focus:ring-slate-400"
+      else
+        "bg-gradient-to-br from-emerald-600 to-emerald-700 hover:from-emerald-600/90 hover:to-emerald-800 text-white focus:ring-emerald-400"
+      end
+
+    base <> " " <> variant
+  end
+
+  defp action_btn_classes(:edit, _task) do
+    "group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md active:shadow-sm bg-gradient-to-br from-indigo-600 to-indigo-700 hover:from-indigo-600/90 hover:to-indigo-800 text-white focus:ring-indigo-400"
+  end
+
+  defp action_btn_classes(:delete, _task) do
+    "group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md active:shadow-sm bg-gradient-to-br from-rose-600 to-rose-700 hover:from-rose-600/90 hover:to-rose-800 text-white focus:ring-rose-400"
+  end
+
+  defp almost_due_badge_classes do
+    "w-full text-center px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-extrabold tracking-wider shadow-sm uppercase animate-pulse"
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -142,14 +172,15 @@ defmodule TodoAppWeb.TaskLive.Index do
 
           <div class="mb-6">
             <div class="relative">
-              <input
-                type="text"
-                phx-change="search"
-                name="query"
-                value={@search_query}
-                placeholder="🔍 Search by name or date..."
-                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-              />
+              <.form for={%{}} id="task-search" phx-change="search" phx-debounce="300">
+                <input
+                  type="text"
+                  name="query"
+                  value={@search_query}
+                  placeholder="🔍 Search by name or date..."
+                  class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                />
+              </.form>
             </div>
           </div>
 
@@ -199,7 +230,7 @@ defmodule TodoAppWeb.TaskLive.Index do
                       <button
                         phx-click="toggle_complete"
                         phx-value-id={task.id}
-                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                        class={action_btn_classes(:toggle, task)}
                       >
                         <%= if task.completed, do: "↩️ Mark Incomplete", else: "✓ Mark Complete" %>
                       </button>
@@ -207,7 +238,7 @@ defmodule TodoAppWeb.TaskLive.Index do
                       <!-- EDIT -->
                       <.link
                         patch={~p"/tasks/#{task}/edit"}
-                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                        class={action_btn_classes(:edit, task)}
                       >
                         ✏️ Edit
                       </.link>
@@ -217,15 +248,17 @@ defmodule TodoAppWeb.TaskLive.Index do
                         phx-click="delete"
                         phx-value-id={task.id}
                         data-confirm="Are you sure you want to delete this task?"
-                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                        class={action_btn_classes(:delete, task)}
                       >
                         🗑️ Delete
                       </button>
                     </div>
+                  </div>
 
+                  <div class="mt-4">
                     <%= if due_soon and !task.completed do %>
-                      <span class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full">
-                        DUE SOON
+                      <span class={almost_due_badge_classes()}>
+                        ALMOST DUE
                       </span>
                     <% end %>
                   </div>
@@ -253,34 +286,10 @@ defmodule TodoAppWeb.TaskLive.Index do
                   <p class="mb-2"><strong>Repeats:</strong> <%= @show_task.repeat %></p>
                 <% end %>
 
-                <div class="mt-4 flex flex-col gap-2">
-                  <button
-                    phx-click="toggle_complete"
-                    phx-value-id={@show_task.id}
-                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
-                  >
-                    <%= if @show_task.completed, do: "↩️ Mark Incomplete", else: "✓ Mark Complete" %>
-                  </button>
-
-                  <.link
-                    patch={~p"/tasks/#{@show_task}/edit"}
-                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
-                  >
-                    ✏️ Edit
-                  </.link>
-
-                  <button
-                    phx-click="delete"
-                    phx-value-id={@show_task.id}
-                    data-confirm="Are you sure you want to delete this task?"
-                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
-                  >
-                    🗑️ Delete
-                  </button>
-
+                <div class="mt-6">
                   <button
                     phx-click="close_modal"
-                    class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 mt-2"
+                    class="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors"
                   >
                     Close
                   </button>

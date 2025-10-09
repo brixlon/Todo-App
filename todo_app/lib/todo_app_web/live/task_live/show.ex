@@ -51,7 +51,7 @@ defmodule TodoAppWeb.TaskLive.Show do
             <%= if due_soon do %>
               <div class="mb-4">
                 <span class="px-4 py-2 bg-amber-600 text-white text-sm font-bold rounded-full">
-                  ⚠️ DUE SOON - Within 24 Hours
+                  ⚠️ ALMOST DUE - Within 24 Hours
                 </span>
               </div>
             <% end %>

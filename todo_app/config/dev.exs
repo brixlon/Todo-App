@@ -1,9 +1,10 @@
+
 import Config
 
 # Configure your database
 config :todo_app, TodoApp.Repo,
   username: "postgres",
-  password: "developer",
+  password: "postgres",
   hostname: "localhost",
   database: "todo_app_dev",
   stacktrace: true,
@@ -26,7 +27,13 @@ config :todo_app, TodoAppWeb.Endpoint,
   secret_key_base: "FN/aCzo9EHPlEsGpeu+tKKCmGrgAuIXWYdWXjh+2MaDCnzxz5NcM4Dj84kSUJTIq",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:todo_app, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:todo_app, ~w(--watch)]}
+    npx: [
+      "tailwindcss",
+      "--input=css/app.css",
+      "--output=../priv/static/assets/css/app.css",
+      "--watch",
+      cd: Path.expand("../assets", __DIR__)
+    ]
   ]
 
 # ## SSL Support

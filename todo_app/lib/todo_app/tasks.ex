@@ -1,3 +1,4 @@
+
 defmodule TodoApp.Tasks do
   @moduledoc """
   The Tasks context.
@@ -5,7 +6,6 @@ defmodule TodoApp.Tasks do
 
   import Ecto.Query, warn: false
   alias TodoApp.Repo
-
   alias TodoApp.Tasks.Task
 
   @doc """
@@ -102,15 +102,36 @@ defmodule TodoApp.Tasks do
     Task.changeset(task, attrs)
   end
 
+  @doc """
+  Searches tasks by title, description, or date.
+
+  ## Examples
+
+      iex> search_tasks("meeting")
+      [%Task{}, ...]
+
+  """
   def search_tasks(query) do
     pattern = "%#{query}%"
 
     from(t in Task,
-      where: ilike(t.title, ^pattern) or ilike(t.description, ^pattern)
+      where:
+        ilike(t.title, ^pattern) or
+        ilike(t.description, ^pattern) or
+        fragment("CAST(? AS TEXT) LIKE ?", t.due_date, ^pattern)
     )
     |> Repo.all()
   end
 
+  @doc """
+  Sorts tasks by inserted_at timestamp.
+
+  ## Examples
+
+      iex> sort_tasks("asc")
+      [%Task{}, ...]
+
+  """
   def sort_tasks(sort) do
     tasks = list_tasks()
 
@@ -118,6 +139,37 @@ defmodule TodoApp.Tasks do
       "asc" -> Enum.sort_by(tasks, & &1.inserted_at, :asc)
       "desc" -> Enum.sort_by(tasks, & &1.inserted_at, :desc)
       _ -> tasks
+    end
+  end
+
+  @doc """
+  Checks if a task is due within the next 24 hours.
+
+  ## Examples
+
+      iex> is_due_soon?(%Task{due_date: ~D[2025-10-08], due_time: ~T[14:00:00]})
+      true
+
+  """
+  def is_due_soon?(%Task{} = task) do
+    # Return false if date or time is nil
+    if is_nil(task.due_date) or is_nil(task.due_time) do
+      false
+    else
+      now = DateTime.utc_now()
+
+      # Combine date and time into a DateTime
+      case DateTime.new(task.due_date, task.due_time) do
+        {:ok, task_datetime} ->
+          diff_seconds = DateTime.diff(task_datetime, now)
+          diff_hours = diff_seconds / 3600
+
+          # Task is due soon if it's within 0-24 hours from now
+          diff_hours >= 0 and diff_hours <= 24
+
+        {:error, _} ->
+          false
+      end
     end
   end
 end

@@ -1,77 +1,296 @@
 defmodule TodoAppWeb.TaskLive.Index do
   use TodoAppWeb, :live_view
-
   alias TodoApp.Tasks
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <Layouts.app flash={@flash}>
-      <.header>
-        Listing Tasks
-        <:actions>
-          <.button variant="primary" navigate={~p"/tasks/new"}>
-            <.icon name="hero-plus" /> New Task
-          </.button>
-        </:actions>
-      </.header>
-
-      <.table
-        id="tasks"
-        rows={@streams.tasks}
-        row_click={fn {_id, task} -> JS.navigate(~p"/tasks/#{task}") end}
-      >
-        <:col :let={{_id, task}} label="Title">{task.title}</:col>
-        <:col :let={{_id, task}} label="Description">{task.description}</:col>
-        <:col :let={{_id, task}} label="Due date">{task.due_date}</:col>
-        <:col :let={{_id, task}} label="Due time">{task.due_time}</:col>
-        <:col :let={{_id, task}} label="Repeat">{task.repeat}</:col>
-        <:action :let={{_id, task}}>
-          <div class="sr-only">
-            <.link navigate={~p"/tasks/#{task}"}>Show</.link>
-          </div>
-          <.link navigate={~p"/tasks/#{task}/edit"}>Edit</.link>
-        </:action>
-        <:action :let={{id, task}}>
-          <.link
-            phx-click={JS.push("delete", value: %{id: task.id}) |> hide("##{id}")}
-            data-confirm="Are you sure?"
-          >
-            Delete
-          </.link>
-        </:action>
-      </.table>
-    </Layouts.app>
-    """
-  end
 
   @impl true
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Listing Tasks")
-     |> stream(:tasks, list_tasks())}
+     |> assign(:search_query, "")
+     |> assign(:tasks, Tasks.list_tasks())
+     |> assign(:page_title, "All Tasks")
+     |> assign(:show_task, nil)} # holds currently selected task for modal
   end
 
+  @impl true
+  def handle_params(params, _url, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :index, _params), do: socket
+
+  # SEARCH
+  @impl true
   def handle_event("search", %{"query" => query}, socket) do
-    tasks = TodoApp.Tasks.search_tasks(query)
-    {:noreply, assign(socket, :tasks, tasks)}
+    tasks =
+      if query == "" do
+        Tasks.list_tasks()
+      else
+        Tasks.search_tasks(query)
+      end
+
+    {:noreply, assign(socket, search_query: query, tasks: tasks)}
   end
 
-  def handle_event("sort", %{"sort" => sort}, socket) do
-    tasks = TodoApp.Tasks.sort_tasks(sort)
-    {:noreply, assign(socket, :tasks, tasks)}
-  end
-
+  # DELETE
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     task = Tasks.get_task!(id)
     {:ok, _} = Tasks.delete_task(task)
+    new_tasks = Enum.reject(socket.assigns.tasks, fn t -> t.id == task.id end)
 
-    {:noreply, stream_delete(socket, :tasks, task)}
+    {:noreply,
+     socket
+     |> put_flash(:info, "Task deleted successfully")
+     |> assign(:tasks, new_tasks)}
   end
 
-  defp list_tasks() do
-    Tasks.list_tasks()
+  # TOGGLE COMPLETE
+  @impl true
+  def handle_event("toggle_complete", %{"id" => id}, socket) do
+    task = Tasks.get_task!(id)
+    {:ok, _} = Tasks.toggle_complete(task)
+
+    updated_tasks =
+      Enum.map(socket.assigns.tasks, fn t ->
+        if t.id == task.id, do: %{t | completed: !t.completed}, else: t
+      end)
+
+    {:noreply, assign(socket, tasks: updated_tasks)}
+  end
+
+  # SHOW TASK DETAILS
+  @impl true
+  def handle_event("show", %{"id" => id}, socket) do
+    task = Tasks.get_task!(id)
+    {:noreply, assign(socket, show_task: task)}
+  end
+
+  # CLOSE MODAL
+  @impl true
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, show_task: nil)}
+  end
+
+  # SORT TASKS: incomplete due soon → incomplete → completed
+  defp sort_tasks(tasks) do
+    Enum.sort_by(tasks, fn task ->
+      completed = task.completed
+      due_soon = Tasks.is_due_soon?(task)
+      date = task.due_date || ~D[9999-12-31]
+      time = task.due_time || ~T[23:59:59]
+
+      priority =
+        cond do
+          completed -> 2
+          due_soon -> 0
+          true -> 1
+        end
+
+      {priority, date, time}
+    end)
+  end
+
+  # CSS Helpers
+  defp task_classes(task) do
+    cond do
+      task.completed -> "bg-green-50 border-green-300 opacity-75"
+      Tasks.is_due_soon?(task) -> "bg-amber-50 border-amber-300 shadow-md"
+      true -> "bg-gray-50 border-gray-200"
+    end
+  end
+
+  defp text_classes(task) do
+    cond do
+      task.completed -> "line-through text-green-900"
+      Tasks.is_due_soon?(task) -> "text-amber-900"
+      true -> "text-gray-600"
+    end
+  end
+
+  defp subtext_classes(task) do
+    cond do
+      task.completed -> "text-green-700"
+      Tasks.is_due_soon?(task) -> "text-amber-800"
+      true -> "text-gray-500"
+    end
+  end
+
+  defp repeat_classes(task) do
+    cond do
+      task.completed -> "bg-green-200 text-green-900"
+      Tasks.is_due_soon?(task) -> "bg-amber-200 text-amber-900"
+      true -> "bg-gray-200 text-gray-700"
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-xl p-8">
+          <div class="flex items-center justify-between mb-8">
+            <h1 class="text-3xl font-bold text-gray-800"><%= @page_title %></h1>
+            <.link
+              patch={~p"/tasks/new"}
+              class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
+            >
+              ➕ New Task
+            </.link>
+          </div>
+
+          <div class="mb-6">
+            <div class="relative">
+              <input
+                type="text"
+                phx-change="search"
+                name="query"
+                value={@search_query}
+                placeholder="🔍 Search by name or date..."
+                class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <%= if @tasks == [] do %>
+              <div class="text-center py-12 text-gray-500">
+                <div class="text-6xl mb-4">📋</div>
+                <p class="text-lg">No tasks found</p>
+              </div>
+            <% else %>
+              <%= for task <- sort_tasks(@tasks) do %>
+                <% due_soon = Tasks.is_due_soon?(task) %>
+                <div class={"p-6 rounded-lg border-2 transition-all " <> task_classes(task)}>
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1 cursor-pointer" phx-click="show" phx-value-id={task.id}>
+                      <div class="flex items-center gap-3 mb-2">
+                        <h3 class={"text-xl font-bold " <> text_classes(task)}><%= task.title %></h3>
+                        <%= if task.completed do %>
+                          <span class="px-2 py-1 bg-green-600 text-white text-xs font-bold rounded-full">
+                            ✓ DONE
+                          </span>
+                        <% end %>
+                      </div>
+                      <p class={"mb-3 " <> subtext_classes(task)}><%= task.description %></p>
+
+                      <div class="flex gap-4 text-sm mb-3">
+                        <%= if task.due_date do %>
+                          <span class={"flex items-center gap-1 " <> subtext_classes(task)}>
+                            📅 <%= Calendar.strftime(task.due_date, "%Y-%m-%d") %>
+                          </span>
+                        <% end %>
+                        <%= if task.due_time do %>
+                          <span class={"flex items-center gap-1 " <> subtext_classes(task)}>
+                            🕐 <%= Calendar.strftime(task.due_time, "%H:%M") %>
+                          </span>
+                        <% end %>
+                        <%= if task.repeat && task.repeat != "none" do %>
+                          <span class={"px-2 py-1 rounded text-xs font-semibold " <> repeat_classes(task)}>
+                            🔄 Repeats <%= task.repeat %>
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                      <!-- TOGGLE COMPLETE -->
+                      <button
+                        phx-click="toggle_complete"
+                        phx-value-id={task.id}
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                      >
+                        <%= if task.completed, do: "↩️ Mark Incomplete", else: "✓ Mark Complete" %>
+                      </button>
+
+                      <!-- EDIT -->
+                      <.link
+                        patch={~p"/tasks/#{task}/edit"}
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                      >
+                        ✏️ Edit
+                      </.link>
+
+                      <!-- DELETE -->
+                      <button
+                        phx-click="delete"
+                        phx-value-id={task.id}
+                        data-confirm="Are you sure you want to delete this task?"
+                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                      >
+                        🗑️ Delete
+                      </button>
+                    </div>
+
+                    <%= if due_soon and !task.completed do %>
+                      <span class="px-3 py-1 bg-amber-600 text-white text-xs font-bold rounded-full">
+                        DUE SOON
+                      </span>
+                    <% end %>
+                  </div>
+                </div>
+              <% end %>
+            <% end %>
+          </div>
+
+          <!-- TASK DETAILS MODAL -->
+          <%= if @show_task do %>
+            <div
+              class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              phx-click="close_modal"
+            >
+              <div class="bg-white rounded-xl p-6 max-w-md w-full shadow-lg" phx-click="noop">
+                <h2 class="text-2xl font-bold mb-4"><%= @show_task.title %></h2>
+                <p class="mb-2"><strong>Description:</strong> <%= @show_task.description %></p>
+                <%= if @show_task.due_date do %>
+                  <p class="mb-2"><strong>Due Date:</strong> <%= Calendar.strftime(@show_task.due_date, "%Y-%m-%d") %></p>
+                <% end %>
+                <%= if @show_task.due_time do %>
+                  <p class="mb-2"><strong>Due Time:</strong> <%= Calendar.strftime(@show_task.due_time, "%H:%M") %></p>
+                <% end %>
+                <%= if @show_task.repeat && @show_task.repeat != "none" do %>
+                  <p class="mb-2"><strong>Repeats:</strong> <%= @show_task.repeat %></p>
+                <% end %>
+
+                <div class="mt-4 flex flex-col gap-2">
+                  <button
+                    phx-click="toggle_complete"
+                    phx-value-id={@show_task.id}
+                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                  >
+                    <%= if @show_task.completed, do: "↩️ Mark Incomplete", else: "✓ Mark Complete" %>
+                  </button>
+
+                  <.link
+                    patch={~p"/tasks/#{@show_task}/edit"}
+                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                  >
+                    ✏️ Edit
+                  </.link>
+
+                  <button
+                    phx-click="delete"
+                    phx-value-id={@show_task.id}
+                    data-confirm="Are you sure you want to delete this task?"
+                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all"
+                  >
+                    🗑️ Delete
+                  </button>
+
+                  <button
+                    phx-click="close_modal"
+                    class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 mt-2"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
   end
 end
